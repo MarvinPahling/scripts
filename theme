@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+FOLDER=~/wallpaper
+cd "$FOLDER"
+
+command -v wal >/dev/null || {
+  echo "wal is not installed"
+  exit 1
+}
+command -v fzf >/dev/null || {
+  echo "fzf is not installed"
+  exit 1
+}
+
+selected=$(find . -type f | fzf)
+if [[ -z "$selected" ]]; then
+  exit 0
+fi
+
+wal -i "$selected" >/dev/null 2>&1
+
+if [[ "$(uname)" == "Darwin" ]]; then
+  osascript -e 'tell application "System Events" to tell process "Ghostty" to click menu item "Reload Configuration" of menu "Ghostty" of menu bar item "Ghostty" of menu bar 1' >/dev/null 2>&1
+  sketchybar --reload >/dev/null 2>&1
+  nvim --server /tmp/nvim-server --remote-send ':colorscheme pywal16<CR>'
+elif [[ "$(uname)" == "Linux" ]]; then
+  : # No action needed for Linux
+fi

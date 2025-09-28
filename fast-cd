@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+if [[ $# -ne 1 ]]; then
+  echo "only one argument allowed"
+  exit 0
+fi
+
+if [[ ! -d "$1" ]]; then
+  echo "$1 is not a directory"
+  exit 0
+fi
+
+directory=$1
+
+cd "$directory"
+selection=$(find . -type d -o -type l | fzf)
+
+if [[ -n "$selection" ]]; then
+  realpath $selection
+fi

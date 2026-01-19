@@ -1,0 +1,185 @@
+// Typst template for Pandoc-Markdown documents
+// Designed by John Maxwell
+// https://imaginarytext.ca/posts/2024/img/simplePandocTypst.template
+
+// Horizontal rule function
+#let horizontalrule = [
+  #line(start: (25%,0%), end: (75%,0%), stroke: (paint: white, thickness: 1pt))
+]
+
+// Main document configuration
+#set page(
+  paper: "us-letter",
+  margin: (left: 1.25in, right: 1.25in, top: 1in, bottom: 1in),
+  header: context {
+    if counter(page).get().first() > 1 [
+      #align(center, smallcaps([$title$]))
+    ]
+  },
+  footer: context {
+    if counter(page).get().first() > 1 [
+      #align(center, counter(page).display("1"))
+    ]
+  }
+)
+
+#set par(
+  first-line-indent: 1.5em,
+  justify: true,
+)
+
+// Font settings
+#set text(
+  font: ("Times New Roman", "Times"),
+  size: 12pt
+)
+
+// Block quote styling
+#show quote: set block(
+  inset: (left: 2em, right: 2em)
+)
+#show quote: set text(
+  style: "italic"
+)
+
+// Code block with optional filename function
+#let code-block(filename: none, language: none, body) = {
+  block(
+    width: 100%,
+    breakable: true,
+    {
+      // Filename header (if provided)
+      if filename != none {
+        block(
+          width: 100%,
+          fill: rgb("#1a1a1a"),
+          inset: (x: 10pt, y: 6pt),
+          radius: (top: 3pt),
+          text(
+            font: ("Courier", "Courier New"),
+            size: 9pt,
+            fill: rgb("#ffffff"),
+            weight: "bold",
+            filename
+          )
+        )
+      }
+      // Code content
+      block(
+        width: 100%,
+        fill: rgb("#116611"),
+        inset: 10pt,
+        radius: if filename != none { (bottom: 3pt) } else { 3pt },
+        body
+      )
+    }
+  )
+}
+
+// Basic code block styling (for blocks without custom attributes)
+#show raw.where(block: true): it => {
+  code-block(it)
+}
+
+// Inline code styling
+#show raw.where(block: false): set text(
+  font: ("Courier", "Courier New"),
+  size: 9pt,
+  fill: rgb("#116611")
+)
+
+// Footnote styling
+#show footnote.entry: it => {
+  let loc = it.note.location()
+  numbering(
+    "1: ",
+    ..counter(footnote).at(loc),
+  )
+  h(0.5em)
+  it.note.body
+}
+
+// Heading styles
+#show heading.where(
+  level: 1
+): set text(
+  font: ("Helvetica", "Arial"),
+  weight: "semibold",
+  size: 14pt
+)
+
+#show heading.where(
+  level: 2
+): set text(
+  font: ("Helvetica", "Arial"),
+  weight: "semibold",
+  size: 12pt
+)
+
+#show heading.where(
+  level: 3
+): set text(
+  font: ("Times New Roman", "Times"),
+  style: "italic",
+  size: 11pt
+)
+
+// Pandoc boilerplate
+$if(title)$
+#v(2em)
+#align(center, text(weight: "bold", size: 16pt, [$title$]))
+$endif$
+
+$if(author)$
+#v(1em)
+#align(center, [$for(author)$$author$$sep$ · $endfor$])
+$endif$
+
+$if(date)$
+#v(1em)
+#align(center, [$date$])
+$endif$
+
+$if(abstract)$
+#v(2em)
+#align(center, [*Abstract*])
+#pad(
+  left: 2em,
+  right: 2em,
+  [$abstract$]
+)
+$endif$
+
+#v(2em)
+
+// Initialize page numbering
+#set page(
+  numbering: "1",
+)
+#counter(page).update(1)
+
+$if(toc)$
+#outline(
+  title: [Table of Contents],
+  indent: auto,
+)
+#pagebreak()
+$endif$
+
+// Document body
+$body$
+
+// Bibliography
+$if(bibliography)$
+#pagebreak()
+#set par(first-line-indent: 0em)
+#bibliography($for(bibliography)$"$bibliography$"$sep$, $endfor$, style: "$if(csl)$$csl$$else$apa$endif$")
+$endif$
+
+// Colophon
+#v(1fr)
+#align(center, [
+  #text(size: 10pt, [
+    _Formatted with Pandoc and Typst._
+  ])
+])

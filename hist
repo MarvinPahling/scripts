@@ -1,0 +1,36 @@
+# hist - Search zsh history with fzf and put result on command line
+# Source this file in your .zshrc: source ~/.config/scripts/hist
+
+hist() {
+    # Determine history file location
+    local histfile
+    if [[ -n "$XDG_CACHE_HOME" && -f "$XDG_CACHE_HOME/zsh_history" ]]; then
+        histfile="$XDG_CACHE_HOME/zsh_history"
+    elif [[ -n "$ZDOTDIR" && -f "$ZDOTDIR/.zsh_history" ]]; then
+        histfile="$ZDOTDIR/.zsh_history"
+    elif [[ -f "$HOME/.zsh_history" ]]; then
+        histfile="$HOME/.zsh_history"
+    else
+        echo "Error: Could not find zsh history file" >&2
+        return 1
+    fi
+
+    # Check if fzf is installed
+    if ! command -v fzf &> /dev/null; then
+        echo "Error: fzf is not installed" >&2
+        return 1
+    fi
+
+    # Parse history and select with fzf
+    # Handles both plain format and extended history format (: timestamp:duration;command)
+    local selected
+    selected=$(tac "$histfile" | sed 's/^: [0-9]*:[0-9]*;//' | fzf --no-sort)
+
+    # If a command was selected, put it on the command line (but don't execute)
+    if [[ -n "$selected" ]]; then
+        # Remove trailing backslashes and whitespace
+        selected="${selected%%\\}"
+        selected="${selected%"${selected##*[![:space:]]}"}"
+        print -z "$selected"
+    fi
+}

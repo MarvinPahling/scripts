@@ -1,0 +1,10 @@
+#!/bin/bash
+
+selected_package=$(find $XDG_DATA_HOME/typst/packages -mindepth 3 -maxdepth 3 -type d | \
+    sed "s|$XDG_DATA_HOME/typst/packages/||" | \
+    awk -F'/' '{print "@" $1 "/" $2 ":" $3}' | \
+    fzf --no-preview)
+
+if [[ -n "$selected_package" ]]; then
+    typst init "$selected_package" "${1:-.}"
+fi

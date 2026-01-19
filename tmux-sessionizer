@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 # Credits to https://github.com/SylvanFranklin
 
 if [[ $# -eq 1 ]]; then

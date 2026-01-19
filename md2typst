@@ -1,0 +1,81 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
+"""
+md2typst - Convert Markdown to Typst format using Pandoc
+
+Usage:
+    md2typst input.md [output.typ]
+
+If output filename is not provided, uses input filename with .typ extension.
+"""
+
+import sys
+import subprocess
+from pathlib import Path
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: md2typst input.md [output.typ]")
+        sys.exit(1)
+
+    input_path = Path(sys.argv[1])
+
+    if not input_path.exists():
+        print(f"Error: {input_path} not found!")
+        sys.exit(1)
+
+    # Determine output path
+    if len(sys.argv) >= 3:
+        output_path = Path(sys.argv[2])
+    else:
+        output_path = input_path.with_suffix('.typ')
+
+    # Locate template file (same directory as this script)
+    script_dir = Path(__file__).parent.resolve()
+    template_path = script_dir / "pandoc-typst.template"
+    lua_filter_path = script_dir / "pandoc-code-filename.lua"
+
+    # Validate template exists
+    if not template_path.exists():
+        print(f"Error: Template not found at {template_path}")
+        print("Please ensure pandoc-typst.template is in the same directory as this script.")
+        sys.exit(1)
+
+    print(f"Converting {input_path} to {output_path}...")
+
+    # Build pandoc command
+    cmd = [
+        "pandoc",
+        str(input_path),
+        "--wrap=none",
+        "--to=typst",
+        f"--template={template_path}",
+    ]
+
+    # Add Lua filter if it exists (for code block filename support)
+    if lua_filter_path.exists():
+        cmd.append(f"--lua-filter={lua_filter_path}")
+
+    cmd.extend(["-o", str(output_path)])
+
+    # Execute pandoc
+    try:
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        print(f"✓ Conversion complete! Output saved to {output_path}")
+    except subprocess.CalledProcessError as e:
+        print(f"Error: Pandoc conversion failed!")
+        if e.stderr:
+            print(f"Pandoc error: {e.stderr}")
+        sys.exit(1)
+    except FileNotFoundError:
+        print("Error: pandoc not found in PATH")
+        print("Please install pandoc: brew install pandoc")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

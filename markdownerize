@@ -1,0 +1,89 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10,<3.14"
+# dependencies = [
+#   "marker-pdf",
+# ]
+# ///
+
+"""
+markdownerize - Convert PDF files to Markdown using marker
+
+Usage:
+    markdownerize <pdf_file> [--output-dir <dir>]
+"""
+
+import sys
+import os
+import argparse
+import subprocess
+from pathlib import Path
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Convert PDF to Markdown using marker",
+        usage="markdownerize <pdf_file> [options]"
+    )
+    parser.add_argument("pdf_file", help="Path to the PDF file to convert")
+    parser.add_argument(
+        "--output-dir",
+        help="Output directory for converted files (default: same as PDF)",
+        default=None
+    )
+    parser.add_argument(
+        "--output-format",
+        choices=["markdown", "json", "html", "chunks"],
+        default="markdown",
+        help="Output format (default: markdown)"
+    )
+    parser.add_argument(
+        "--page-range",
+        help="Page range to convert (e.g., '0,5-10,20')",
+        default=None
+    )
+
+    args = parser.parse_args()
+
+    # Validate PDF file exists
+    pdf_path = Path(args.pdf_file).resolve()
+    if not pdf_path.exists():
+        print(f"Error: File not found: {pdf_path}", file=sys.stderr)
+        sys.exit(1)
+
+    if not pdf_path.suffix.lower() == '.pdf':
+        print(f"Error: File is not a PDF: {pdf_path}", file=sys.stderr)
+        sys.exit(1)
+
+    # Build marker_single command
+    cmd = ["marker_single", str(pdf_path)]
+
+    if args.output_dir:
+        cmd.extend(["--output_dir", args.output_dir])
+    else:
+        # Default to PDF's directory
+        cmd.extend(["--output_dir", str(pdf_path.parent)])
+
+    if args.output_format:
+        cmd.extend(["--output_format", args.output_format])
+
+    if args.page_range:
+        cmd.extend(["--page_range", args.page_range])
+
+    # Run marker_single
+    print(f"Converting {pdf_path.name} to {args.output_format}...")
+    try:
+        result = subprocess.run(cmd, check=True)
+        print(f" Conversion complete!")
+        sys.exit(result.returncode)
+    except subprocess.CalledProcessError as e:
+        print(f"Error: Conversion failed with code {e.returncode}", file=sys.stderr)
+        sys.exit(e.returncode)
+    except FileNotFoundError:
+        print("Error: marker_single command not found", file=sys.stderr)
+        print("This should not happen with uv - please check your installation", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

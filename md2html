@@ -1,0 +1,118 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
+"""
+md2html - Convert Markdown to HTML via Typst
+
+Usage:
+    md2html input.md [output.html]
+    md2html input.md --keep-intermediate
+
+If output filename is not provided, uses input filename with .html extension.
+This script converts MD → Typst → HTML using md2typst and typst compile.
+
+Note: Typst HTML export may vary in quality as it is a newer feature.
+"""
+
+import sys
+import argparse
+import subprocess
+from pathlib import Path
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Convert Markdown to HTML via Typst",
+        usage="md2html input.md [output.html] [--keep-intermediate]"
+    )
+    parser.add_argument("input_file", help="Path to the Markdown file to convert")
+    parser.add_argument(
+        "output_file",
+        nargs="?",
+        help="Output HTML file path (default: input file with .html extension)"
+    )
+    parser.add_argument(
+        "--keep-intermediate",
+        action="store_true",
+        help="Keep the intermediate .typ file after conversion"
+    )
+
+    args = parser.parse_args()
+
+    input_path = Path(args.input_file)
+
+    # Validate input
+    if not input_path.exists():
+        print(f"Error: {input_path} not found!")
+        sys.exit(1)
+
+    # Determine final output path
+    if args.output_file:
+        output_path = Path(args.output_file)
+    else:
+        output_path = input_path.with_suffix('.html')
+
+    # Create intermediate .typ file path
+    typ_path = input_path.with_suffix('.typ')
+    cleanup_needed = not args.keep_intermediate
+
+    print(f"Converting {input_path} to {output_path}...")
+
+    try:
+        # Step 1: Convert MD → Typst using md2typst
+        print("Step 1/2: Converting Markdown to Typst...")
+        script_dir = Path(__file__).parent.resolve()
+        md2typst_cmd = [str(script_dir / "md2typst"), str(input_path), str(typ_path)]
+
+        result = subprocess.run(md2typst_cmd, check=True, capture_output=True, text=True)
+
+        # Step 2: Compile Typst → HTML using typst
+        print("Step 2/2: Compiling Typst to HTML...")
+        print("Note: Typst HTML export may vary in quality")
+
+        typst_cmd = [
+            "typst", "compile",
+            "--format", "html",
+            str(typ_path),
+            str(output_path)
+        ]
+
+        result = subprocess.run(typst_cmd, check=True, capture_output=True, text=True)
+
+        print(f"✓ Conversion complete! Output saved to {output_path}")
+
+        if args.keep_intermediate:
+            print(f"  Intermediate file preserved: {typ_path}")
+
+    except subprocess.CalledProcessError as e:
+        print(f"Error: Typst HTML conversion failed!")
+        if e.stderr:
+            print(f"Error details: {e.stderr}")
+
+        # Check if it's the HTML feature not available error
+        if "html export is only available when" in str(e.stderr):
+            print("\n⚠️  Your Typst installation doesn't have HTML export enabled.")
+            print("This is because Typst HTML export is experimental and requires")
+            print("compiling Typst from source with --features html")
+            print("\nAlternative: Use pandoc directly for HTML output:")
+            print(f"  pandoc {input_path} -o {output_path}")
+            print("\nOr install a Typst version with HTML support from source:")
+            print("  https://github.com/typst/typst")
+
+        sys.exit(1)
+    except FileNotFoundError as e:
+        print(f"Error: Required command not found")
+        print("Please ensure md2typst and typst are available in PATH")
+        print("Install typst: brew install typst")
+        sys.exit(1)
+    finally:
+        # Cleanup: Remove intermediate .typ file if requested
+        if cleanup_needed and typ_path.exists():
+            print(f"Cleaning up intermediate file: {typ_path}")
+            typ_path.unlink()
+
+
+if __name__ == "__main__":
+    main()

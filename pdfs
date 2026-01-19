@@ -1,0 +1,7 @@
+#!/bin/zsh
+
+selected_pdf=$(find . -maxdepth 1 -name "*.pdf" -type f | fzf --no-preview)
+
+if [[ -n "$selected_pdf" ]]; then
+    zathura "$selected_pdf" & 
+fi

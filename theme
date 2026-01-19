@@ -23,5 +23,9 @@ if [[ "$(uname)" == "Darwin" ]]; then
   sketchybar --reload >/dev/null 2>&1
   nvim --server /tmp/nvim-server --remote-send ':colorscheme pywal16<CR>'
 elif [[ "$(uname)" == "Linux" ]]; then
-  : # No action needed for Linux
+  # Copy pywal-generated Noctalia colors to config
+  cp ~/.cache/wal/colors-noctalia.json ~/.config/noctalia/colors.json 2>/dev/null
+
+  # Reload QuickShell (Noctalia)
+  pkill -SIGUSR2 quickshell 2>/dev/null || quickshell --quit 2>/dev/null
 fi

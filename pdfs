@@ -1,7 +1,8 @@
-#!/bin/zsh
+#!/bin/bash
 
-selected_pdf=$(find . -maxdepth 1 -name "*.pdf" -type f | fzf --no-preview)
+selected_pdf=$(fd ".pdf" --max-depth=2 | fzf --no-preview)
 
 if [[ -n "$selected_pdf" ]]; then
-    zathura "$selected_pdf" & 
+  sioyek --nofocus "$selected_pdf" $ >/dev/null &
+  disown
 fi

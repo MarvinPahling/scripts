@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-cd ~/micro-c-lab/t32/bin/macosx64
-open ~/micro-c-lab/t32/bin/macosx64/t32marm-qt.app/

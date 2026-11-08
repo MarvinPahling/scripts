@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+clear_brew_cache() {
+  # Scrub stale and current downloads; remove cached files for installed formulae too.
+  brew cleanup --prune=all --scrub
+
+  local cache_dir
+  cache_dir="$(brew --cache)"
+  if [[ -z "$cache_dir" || "$cache_dir" == "/" || "$cache_dir" == "$HOME" ]]; then
+    printf 'Refusing to remove invalid Homebrew cache path: %s\n' "$cache_dir" >&2
+    return 1
+  fi
+
+  rm -rf -- "$cache_dir"
+}
+
+clear_brew_cache
+brew update
+brew upgrade
+clear_brew_cache
